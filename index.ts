@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, Application } from 'express';
+import express, { Application, Request, Response } from 'express';
 import dotenv from 'dotenv';
 
 //For env File
