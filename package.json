@@ -15,7 +15,7 @@
   "scripts": {
     "lint": "eslint src/**/*.ts --fix",
     "build": "npx tsc",
-    "start": "ts-node-esm index.ts ",
+    "start": "node --loader ts-node/esm index.ts ",
     "dev": "nodemon index.ts"
   },
   "devDependencies": {
