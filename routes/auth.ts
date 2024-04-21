@@ -10,18 +10,15 @@ function generateEmailToken(): string {
 }
 
 router.post('/login', async (req: Request, res: Response) => {
-    const { username, password } = req.body;
+    const { email } = req.body;
     const user = userData?.map((item) => {
-        if (item.username === username) {
+        if (item.email === email) {
             return item;
         }
     }).filter(user => user !== undefined)[0];
 
     if (!user)
         return res.status(404).json('User not found')
-
-    if (user.password !== password)
-        return res.status(404).json('Incorrect password')
 
     res.status(200).json(user)
 
@@ -47,6 +44,7 @@ router.post('/authenticate', async (req, res) => {
     }).filter(token => token !== undefined)[0];
 
     console.log('token ', dbToken)
+    
     if (!dbToken) {
         return res.sendStatus(401);
     }
