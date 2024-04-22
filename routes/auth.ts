@@ -11,23 +11,29 @@ function generateEmailToken(): string {
 
 router.post('/login', async (req: Request, res: Response) => {
     const { email } = req.body;
-    const user = userData?.map((item) => {
-        if (item.email === email) {
-            return item;
+    const user = userData?.map((userInfo) => {
+        if (userInfo.email === email) {
+            return userInfo;
         }
     }).filter(user => user !== undefined)[0];
-
-    if (!user)
-        return res.status(404).json('User not found')
-
-    res.status(200).json(user)
 
     const emailToken = generateEmailToken();
     const expiration = new Date(
         new Date().getTime() + EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
     );
 
-    // save token to DB
+    if (!user){
+        userData.push({
+            username : "Vinni1",
+            email : email,
+            tokenData : {
+             token : emailToken,
+             expiration : expiration
+            }
+        })
+    }
+
+    res.status(200).json(user)
 
     //send Email
 
@@ -46,7 +52,7 @@ router.post('/authenticate', async (req, res) => {
     console.log('token ', dbToken)
     
     if (!dbToken) {
-        return res.sendStatus(401);
+        return res.sendStatus(401).json("Invalid token");
     }
 
     if (dbToken.expiration < new Date()) {
