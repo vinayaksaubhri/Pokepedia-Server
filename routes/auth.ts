@@ -1,13 +1,8 @@
 import express, { Request, Response } from "express";
 import { userData } from "./db.js";
+import { EMAIL_TOKEN_EXPIRATION_MINUTES, AUTHENTICATION_EXPIRATION_HOURS, generateEmailToken } from "../utils.js";
 
 const router = express.Router()
-const EMAIL_TOKEN_EXPIRATION_MINUTES = 10;
-const AUTHENTICATION_EXPIRATION_HOURS = 12;
-
-function generateEmailToken(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
 router.post('/login', async (req: Request, res: Response) => {
     const { email } = req.body;
