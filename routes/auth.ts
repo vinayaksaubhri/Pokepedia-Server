@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
-import { userData } from "./db.js";
+import { userData,tokenData } from "./db.js";
+import { sendEmail } from "../utils.js";
 import { EMAIL_TOKEN_EXPIRATION_MINUTES, AUTHENTICATION_EXPIRATION_HOURS, generateEmailToken } from "../utils.js";
 
 const router = express.Router()
@@ -11,7 +12,7 @@ router.post('/login', async (req: Request, res: Response) => {
             return userInfo;
         }
     }).filter(user => user !== undefined)[0];
-
+console.log('mail ',email)
     const emailToken = generateEmailToken();
     const expiration = new Date(
         new Date().getTime() + EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
@@ -19,6 +20,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     if (!user){
         userData.push({
+            userId:4,
             username : "Vinni1",
             email : email,
             tokenData : {
@@ -26,11 +28,19 @@ router.post('/login', async (req: Request, res: Response) => {
              expiration : expiration
             }
         })
+
+        tokenData.push({
+            id:234,
+            userId: 4,
+            token:"111111",
+            expiration : false,
+            createdAt : new Date()
+        })
     }
 
     res.status(200).json(user)
 
-    //send Email
+    sendEmail();
 
 });
 
