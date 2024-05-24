@@ -1,6 +1,6 @@
  export const userData = [
 {
-    userId:1,
+    userId:"1",
     username : "Vinni",
     email : "vinni@gmail.com",
     tokenData : {
@@ -10,7 +10,7 @@
 
 },
 {
-    userId:2,
+    userId:"2",
     username : "Raj",
     email : "raj@gmail.com",
     tokenData : {
@@ -19,7 +19,7 @@
        }
 },
 {
-    userId:3,
+    userId:"3",
     username : "Pp",
     email : "pp@gmail.com",
     tokenData : {
@@ -32,7 +32,7 @@
 export const tokenData =[
     {
         id:123,
-        userId: 1,
+        userId: "1",
         token:"123456",
         expiration : false,
         createdAt : new Date()
@@ -46,7 +46,7 @@ export const tokenData =[
     },
     {
         id:123,
-        userId: 3,
+        userId: "3",
         token:"123456",
         expiration : false,
         createdAt : new Date()

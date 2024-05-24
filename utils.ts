@@ -21,13 +21,13 @@ const transporter = nodemailer.createTransport({
   },
   });
 
- export const sendEmail = () => {
+ export const sendEmail = (emailToken:string) => {
   console.log('nodemail')
     var mailOptions = {
       from: process.env.SMTP_MAIL,
       to: 'tt033251@gmail.com',
       subject: 'This is test mail',
-      text: 'Welcome to nodemailer',
+      text: `Welcome to nodemailer, your one time password is ${emailToken}`,
     };
   
     transporter.sendMail(mailOptions, function (error, info) {
