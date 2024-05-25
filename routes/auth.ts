@@ -1,6 +1,12 @@
 import express, { Request, Response } from "express";
-import { userData } from "./db.js";
+import { userData,tokenData } from "./db.js";
+import { sendEmail } from "../utils.js";
 import { EMAIL_TOKEN_EXPIRATION_MINUTES, AUTHENTICATION_EXPIRATION_HOURS, generateEmailToken } from "../utils.js";
+import { v4 as uuidv4 } from "uuid"
+import jwt from 'jsonwebtoken'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const router = express.Router()
 
@@ -11,14 +17,16 @@ router.post('/login', async (req: Request, res: Response) => {
             return userInfo;
         }
     }).filter(user => user !== undefined)[0];
-
+console.log('mail ',email, uuidv4())
     const emailToken = generateEmailToken();
     const expiration = new Date(
         new Date().getTime() + EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
     );
 
     if (!user){
+        const newUserID = uuidv4();
         userData.push({
+            userId:newUserID,
             username : "Vinni1",
             email : email,
             tokenData : {
@@ -26,11 +34,19 @@ router.post('/login', async (req: Request, res: Response) => {
              expiration : expiration
             }
         })
+
+        tokenData.push({
+            id:234,
+            userId: newUserID,
+            token:"111111",
+            expiration : false,
+            createdAt : new Date()
+        })
     }
 
     res.status(200).json(user)
 
-    //send Email
+    // sendEmail(emailToken);
 
 });
 
@@ -59,13 +75,21 @@ router.post('/authenticate', async (req, res) => {
         new Date().getTime() + AUTHENTICATION_EXPIRATION_HOURS * 60 * 60 * 1000
     );
 
-    res.json({ dbToken })
+    
+    // apitoken for user session nad it is used in below jwttoken
+    
+    
+    const jwt_token = jwt.sign({ token }, process.env.JWT_SECRET || "abcd", {
+        expiresIn: "12d",
+	});
 
-    // apitoken for user session
+	res.cookie("jwt", jwt_token, {
+		maxAge: 12 * 24 * 60 * 60 * 1000,
+		httpOnly: true, // prevent XSS attacks cross-site scripting attacks
+		sameSite: "strict", // CSRF attacks cross-site request forgery attacks
+	});
 
-
-    // jwt_token
-
+    res.json({ jwt_token })
 
 })
 export default router;
