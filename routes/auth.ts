@@ -1,52 +1,34 @@
+import dotenv from 'dotenv';
 import express, { Request, Response } from "express";
-import { userData,tokenData } from "./db.js";
-import { sendEmail } from "../utils.js";
-import { EMAIL_TOKEN_EXPIRATION_MINUTES, AUTHENTICATION_EXPIRATION_HOURS, generateEmailToken } from "../utils.js";
-import { v4 as uuidv4 } from "uuid"
-import jwt from 'jsonwebtoken'
-import dotenv from 'dotenv'
+import jwt from 'jsonwebtoken';
+import { AUTHENTICATION_EXPIRATION_HOURS } from "../utils.js";
+import { generateOTP } from "../utils/generateOTP.js";
+import { validateEmail } from "../utils/validateEmail.js";
+import { userData } from "./db.js";
 
 dotenv.config()
 
 const router = express.Router()
 
+
 router.post('/login', async (req: Request, res: Response) => {
-    const { email } = req.body;
-    const user = userData?.map((userInfo) => {
-        if (userInfo.email === email) {
-            return userInfo;
-        }
-    }).filter(user => user !== undefined)[0];
-console.log('mail ',email, uuidv4())
-    const emailToken = generateEmailToken();
-    const expiration = new Date(
-        new Date().getTime() + EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
-    );
+    const { email} : {email:string|undefined} = req.body;
 
-    if (!user){
-        const newUserID = uuidv4();
-        userData.push({
-            userId:newUserID,
-            username : "Vinni1",
-            email : email,
-            tokenData : {
-             token : emailToken,
-             expiration : expiration
-            }
-        })
-
-        tokenData.push({
-            id:234,
-            userId: newUserID,
-            token:"111111",
-            expiration : false,
-            createdAt : new Date()
-        })
+    if (!email) {
+       return res.status(400).send("email is required");
     }
 
-    res.status(200).json(user)
+    const isEmailValid = validateEmail(email);
+    
+      if (!isEmailValid) {
+        res.status(400).send("email is not valid");
+    }
 
-    // sendEmail(emailToken);
+    const OTP = generateOTP();
+
+    res.status(200).json({ OTP ,isEmailValid});
+
+
 
 });
 
