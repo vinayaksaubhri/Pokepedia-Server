@@ -11,7 +11,7 @@ const port = process.env.PORT || 8000;
 app.use(express.json())
 
 app.get('/', (req: Request, res: Response) => {
-  res.send('Welcome to Express & TypeScript Server');
+  res.send('Welcome to Pokepedia Server!');
 });
 app.get('/healthz', (req, res) => {
   res.status(200).send('Ok');
