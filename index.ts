@@ -1,23 +1,23 @@
-import express, { Application, Request, Response } from 'express';
-import dotenv from 'dotenv';
-import authRoute from './routes/auth.js';
+import express, { Application, Request, Response } from "express";
+import * as dotenv from "dotenv";
+import authRoute from "./routes/auth.js";
+dotenv.config();
 
 //For env File
-dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 8000;
 
-app.use(express.json())
+app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Welcome to Pokepedia Server!');
+app.get("/", (req: Request, res: Response) => {
+  res.send("Welcome to Pokepedia Server!");
 });
-app.get('/healthz', (req, res) => {
-  res.status(200).send('Ok');
+app.get("/healthz", (req, res) => {
+  res.status(200).send("Ok");
 });
 
-app.use('/auth', authRoute);
+app.use("/auth", authRoute);
 
 app.listen(port, () => {
   console.log(`Server is Fire at http://localhost:${port}`);

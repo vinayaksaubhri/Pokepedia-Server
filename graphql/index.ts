@@ -1,5 +1,6 @@
 import { GraphQLClient } from "graphql-request";
-require("dotenv").config();
+import * as dotenv from "dotenv";
+dotenv.config();
 
 if (
   typeof process.env.GRAPHQL_ENDPOINT === "undefined" ||
