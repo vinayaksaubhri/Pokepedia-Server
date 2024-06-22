@@ -1,12 +1,13 @@
-import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { AUTHENTICATION_EXPIRATION_HOURS } from "../utils.js";
 import { generateOTP } from "../utils/generateOTP.js";
+import { sendOTPToUser } from "../utils/sendOTPToUser.js";
 import { validateEmail } from "../utils/validateEmail.js";
 import { userData } from "./db.js";
 import { client } from "../graphql/index.js";
+import { INSERT_OTP } from "../graphql/mutation.js";
 import { GET_USER_TEST_VALUE } from "../graphql/queries.js";
 
 dotenv.config();
@@ -14,28 +15,45 @@ dotenv.config();
 const router = express.Router();
 
 router.post("/login", async (req: Request, res: Response) => {
-  const { email }: { email: string | undefined } = req.body;
+  try {
+    const { email }: { email: string | undefined } = req.body;
 
-  if (!email) {
-    return res.status(400).send("email is required");
+    if (!email) {
+      return res.status(400).send({
+        message: "email is required",
+        error: "email is required",
+        success: false,
+      });
+    }
+
+    const isEmailValid = validateEmail(email);
+
+    if (!isEmailValid) {
+      return res.status(400).send({
+        message: "email is not valid",
+        error: "email is not valid",
+        success: false,
+      });
+    }
+
+    const isTestUser = await getIsTestUsers({ email });
+
+    const OTP = generateOTP(isTestUser);
+
+    await addOTPToDB(email, OTP);
+    if (!isTestUser) {
+      await sendOTPToUser(email, OTP);
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal server error",
+      error,
+      success: false,
+    });
   }
-
-  const isEmailValid = validateEmail(email);
-
-  if (!isEmailValid) {
-    return res.status(400).send("email is not valid");
-  }
-
-  const isTestUser = await getIsTestUsers({ email });
-
-  const OTP = generateOTP(isTestUser);
-
-  res.status(200).json({ OTP, isEmailValid });
-
-  sendOTPToUser(email, OTP);
 });
-
-//
 
 router.post("/authenticate", async (req, res) => {
   const { email, token } = req.body;
@@ -76,42 +94,28 @@ router.post("/authenticate", async (req, res) => {
 
   res.json({ jwt_token });
 });
+async function addOTPToDB(email: string, OTP: string) {
+  try {
+    const result = await client.request(INSERT_OTP, {
+      email,
+      emailToken: OTP,
+    });
+  } catch (error) {
+    throw new Error("Error while adding OTP to the database");
+  }
+}
+
+export async function getIsTestUsers(userDetails: { email: string }) {
+  try {
+    const result = await client.request(GET_USER_TEST_VALUE, {
+      email: userDetails.email,
+    });
+    const isTest = result.users_user?.[0]?.isTest;
+
+    return isTest || false;
+  } catch (error) {
+    throw new Error("Error while fetching user details");
+  }
+}
+
 export default router;
-
-const getIsTestUsers = async (userDetails: { email: string }) => {
-  const result = await client.request(GET_USER_TEST_VALUE, {
-    email: userDetails.email,
-  });
-  const isTest = result.users_user?.[0]?.isTest;
-
-  return isTest || false;
-};
-const sendOTPToUser = async (email: string, OTP: string) => {
-  // send OTP to user
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    service: "gmail",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.SMTP_MAIL,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-
-  console.log("nodemail");
-  let mailOptions = {
-    from: process.env.SMTP_MAIL,
-    to: email,
-    subject: "Pokepedia OTP",
-    text: `Welcome to Pokepedia, your one time password is ${OTP}`,
-  };
-
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent successfully!");
-    }
-  });
-};
