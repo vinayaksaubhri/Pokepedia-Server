@@ -21,6 +21,7 @@
     "lint": "eslint src/**/*.ts --fix",
     "build": "yarn && npx tsc",
     "start": "node --loader ts-node/esm index.ts ",
+    "server": "node index.js",
     "dev": "nodemon index.ts",
     "start:nodemon": "node ./node_modules/nodemon/bin/nodemon.js"
   },
