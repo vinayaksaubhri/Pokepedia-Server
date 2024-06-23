@@ -1,14 +1,20 @@
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { AUTHENTICATION_EXPIRATION_HOURS } from "../utils.js";
+import { client } from "../graphql/index.js";
+import {
+  CREATE_NEW_USER,
+  INSERT_OTP,
+  RESET_OTP_IS_VALID,
+} from "../graphql/mutation.js";
+import {
+  GET_USER_DETAILS,
+  GET_USER_OTP,
+  GET_USER_TEST_VALUE,
+} from "../graphql/queries.js";
 import { generateOTP } from "../utils/generateOTP.js";
 import { sendOTPToUser } from "../utils/sendOTPToUser.js";
 import { validateEmail } from "../utils/validateEmail.js";
-import { userData } from "./db.js";
-import { client } from "../graphql/index.js";
-import { INSERT_OTP } from "../graphql/mutation.js";
-import { GET_USER_TEST_VALUE } from "../graphql/queries.js";
 
 dotenv.config();
 
@@ -56,43 +62,69 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/authenticate", async (req, res) => {
-  const { email, token } = req.body;
+  const { email, otp } = req.body;
 
-  const dbToken = userData
-    ?.map((item) => {
-      if (item.tokenData.token === token) {
-        return item.tokenData;
-      }
-    })
-    .filter((token) => token !== undefined)[0];
-
-  console.log("token ", dbToken);
-
-  if (!dbToken) {
-    return res.sendStatus(401).json("Invalid token");
+  if (!email) {
+    return res.status(400).send({
+      message: "email is required",
+      error: "email is required",
+      success: false,
+    });
   }
 
-  if (dbToken.expiration < new Date()) {
-    return res.status(401).json({ error: "Token expired!" });
+  const isEmailValid = validateEmail(email);
+
+  if (!isEmailValid) {
+    return res.status(400).send({
+      message: "email is not valid",
+      error: "email is not valid",
+      success: false,
+    });
+  }
+  const latestOTP = await getOTPFromDB(email);
+
+  if (!latestOTP) {
+    return res.status(400).send({
+      message: "Invalid OTP",
+      error: "Invalid OTP",
+      success: false,
+    });
   }
 
-  const expiration = new Date(
-    new Date().getTime() + AUTHENTICATION_EXPIRATION_HOURS * 60 * 60 * 1000
-  );
+  if (latestOTP.emailToken !== otp) {
+    return res.status(400).send({
+      message: "Invalid OTP",
+      error: "Invalid OTP",
+      success: false,
+    });
+  }
 
-  // apitoken for user session nad it is used in below jwttoken
+  if (latestOTP.expirationDate < new Date()) {
+    return res.status(400).send({
+      message: "OTP expired",
+      error: "OTP expired",
+      success: false,
+    });
+  }
+  let jwt_token = "";
 
-  const jwt_token = jwt.sign({ token }, process.env.JWT_SECRET || "abcd", {
-    expiresIn: "12d",
+  const { userExists, userDetails } = await getUserDetails({ email });
+
+  if (!userExists) {
+    const { userDetails } = await createNewUser(email);
+    jwt_token = await generateJWTToken(userDetails.id);
+  }
+  jwt_token = await generateJWTToken(userDetails.id);
+
+  resetOTPIsValid(email);
+
+  return res.status(200).json({
+    success: true,
+    jwt_token,
+    isTest: userDetails.isTest || false,
+    isSignUpCompleted: userDetails.isSignUpCompleted || false,
+    isBanned: userDetails.isBanned || false,
   });
-
-  res.cookie("jwt", jwt_token, {
-    maxAge: 12 * 24 * 60 * 60 * 1000,
-    httpOnly: true, // prevent XSS attacks cross-site scripting attacks
-    sameSite: "strict", // CSRF attacks cross-site request forgery attacks
-  });
-
-  res.json({ jwt_token });
 });
 async function addOTPToDB(email: string, OTP: string) {
   try {
@@ -105,7 +137,7 @@ async function addOTPToDB(email: string, OTP: string) {
   }
 }
 
-export async function getIsTestUsers(userDetails: { email: string }) {
+async function getIsTestUsers(userDetails: { email: string }) {
   try {
     const result = await client.request(GET_USER_TEST_VALUE, {
       email: userDetails.email,
@@ -118,4 +150,65 @@ export async function getIsTestUsers(userDetails: { email: string }) {
   }
 }
 
+async function getOTPFromDB(email: string) {
+  try {
+    const result = await client.request(GET_USER_OTP, {
+      email,
+    });
+    return result.users_otpToken?.[0];
+  } catch (error) {
+    throw new Error("Error while fetching user OTP");
+  }
+}
+
+async function getUserDetails(userDetails: { email: string }) {
+  try {
+    const result = await client.request(GET_USER_DETAILS, {
+      email: userDetails.email,
+    });
+    return {
+      userExists: result.users_user?.[0] ? true : false,
+      userDetails: result.users_user?.[0] as {
+        id: string;
+        isTest: boolean;
+        isSignUpCompleted: boolean;
+        isBanned: boolean;
+      },
+    };
+  } catch (error) {
+    throw new Error("Error while fetching user details");
+  }
+}
+async function createNewUser(email: string) {
+  try {
+    const result = await client.request(CREATE_NEW_USER, {
+      email,
+    });
+    return {
+      userDetails: result.users_user?.[0] as {
+        id: string;
+        isTest: boolean;
+        isSignUpCompleted: boolean;
+        isBanned: boolean;
+      },
+    };
+  } catch (error) {
+    throw new Error("Error while creating new user");
+  }
+}
+async function generateJWTToken(userId: string) {
+  const jwt_token = jwt.sign({ userId }, process.env.JWT_SECRET || "abcd", {
+    expiresIn: "30d",
+  });
+  return jwt_token;
+}
+async function resetOTPIsValid(email: string) {
+  try {
+    const result = await client.request(RESET_OTP_IS_VALID, {
+      email,
+    });
+  } catch (error) {
+    throw new Error("Error while resetting OTP is valid");
+  }
+}
 export default router;
