@@ -530,6 +530,7 @@ __metadata:
     eslint-plugin-prettier: ^5.0.1
     express: ^4.18.2
     express-rate-limit: ^7.3.1
+    graphql: ^16.9.0
     graphql-request: 5.1.0
     jsonwebtoken: ^9.0.2
     nodemailer: ^6.9.13
@@ -1678,6 +1679,13 @@ __metadata:
   peerDependencies:
     graphql: 14 - 16
   checksum: 8b65d5c1b0cad8996a843b52305b2712ffbf842c700487d4cee1ed719f22baacaacfddafb65572bcddd67d57fd1d2d389dee2430ffba4b34c3ab542d079446c7
+  languageName: node
+  linkType: hard
+
+"graphql@npm:^16.9.0":
+  version: 16.9.0
+  resolution: "graphql@npm:16.9.0"
+  checksum: 8cb3d54100e9227310383ce7f791ca48d12f15ed9f2021f23f8735f1121aafe4e5e611a853081dd935ce221724ea1ae4638faef5d2921fb1ad7c26b5f46611e9
   languageName: node
   linkType: hard
 
