@@ -21,7 +21,7 @@
   },
   "type": "module",
   "scripts": {
-    "lint": "eslint src/**/*.ts --fix",
+    "lint": "eslint './**/*.ts' --fix",
     "build": "yarn && npx tsc",
     "start": "node --loader ts-node/esm index.ts ",
     "server": "yarn && node index.js",
