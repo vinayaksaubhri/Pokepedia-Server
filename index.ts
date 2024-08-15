@@ -2,6 +2,8 @@ import express, { Application, Request, Response } from "express";
 import * as dotenv from "dotenv";
 import authRoute from "./routes/auth.js";
 import { rateLimit } from "express-rate-limit";
+import { WebSocketServer } from "ws";
+import { GameManager } from "./class/gameManager.js";
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -16,9 +18,28 @@ dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 8000;
+const wss = new WebSocketServer({ port: 8080 });
 
 app.use(express.json());
 app.use(limiter);
+
+wss.on("connection", function connection(ws) {
+  try {
+    console.log("🚀 ~ connection ~ GameInstance:");
+    const GameInstance = GameManager.getInstance();
+    console.log("🚀 ~ connection ~ GameInstance:", GameInstance);
+    ws.on("message", (data) => {
+      const message = JSON.parse(data.toString());
+      if (message.type === "create") {
+        GameInstance.createGameRoom(message.playerId, ws as any);
+      } else if (message.type === "join") {
+        GameInstance.joinGameRoom(message.playerId, ws as any, message.roomID);
+      }
+    });
+  } catch (error) {
+    console.log("🚀 ~ connection ~ error:", error);
+  }
+});
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to Pokepedia Server!");
