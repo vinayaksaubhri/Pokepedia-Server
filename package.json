@@ -23,7 +23,7 @@
   "scripts": {
     "lint": "eslint './**/*.ts' --fix",
     "build": "yarn && npx tsc",
-    "start": "node --loader ts-node/esm index.ts ",
+    "start": "node --import ./loader.js index.ts ",
     "server": "yarn && node index.js",
     "dev": "nodemon index.ts",
     "start:nodemon": "node ./node_modules/nodemon/bin/nodemon.js"
