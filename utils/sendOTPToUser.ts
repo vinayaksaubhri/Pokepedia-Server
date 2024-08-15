@@ -11,7 +11,7 @@ export async function sendOTPToUser(email: string, OTP: string) {
     },
   });
 
-  let mailOptions = {
+  const mailOptions = {
     from: process.env.SMTP_MAIL,
     to: email,
     subject: "Pokepedia OTP",
