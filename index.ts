@@ -31,9 +31,9 @@ wss.on("connection", function connection(ws) {
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString());
       if (message.type === "create") {
-        GameInstance.createGameRoom(message.playerId, ws as any);
+        GameInstance.createGameRoom(message.playerId, ws);
       } else if (message.type === "join") {
-        GameInstance.joinGameRoom(message.playerId, ws as any, message.roomID);
+        GameInstance.joinGameRoom(message.playerId, ws, message.roomID);
       }
     });
   } catch (error) {

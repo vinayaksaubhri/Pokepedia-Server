@@ -1,4 +1,5 @@
 import generateRoomId from "../utils/generateRoomId.js";
+import WebSocket from "ws";
 
 export class Game {
   public roomID: string;
