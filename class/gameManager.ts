@@ -16,32 +16,35 @@ export class GameManager {
     return GameManager.instance;
   }
 
-  public createGameRoom(playerID: string, ws: WebSocket): void {
-    const game = new Game({ player1Id: playerID, ws });
+  public createGameRoom(playerId: string, ws: WebSocket): void {
+    const game = new Game({ player1Id: playerId, ws });
     this.games.push(game);
     this.gameHandler(ws);
 
     ws.send(
       JSON.stringify({
-        roomId: game.roomID,
+        roomId: game.roomId,
         status: "Room Created",
         statusCode: 200,
       })
     );
   }
-  public joinGameRoom(playerID: string, ws: WebSocket, roomID: string): void {
-    const game = this.games.find((game) => game.roomID === roomID);
+  public joinGameRoom(playerId: string, ws: WebSocket, roomId: string): void {
+    const game = this.games.find((game) => game.roomId === roomId);
     if (game) {
-      game.user.player2Id = playerID;
+      game.user.player2Id = playerId;
       game.user.webSocketPlayer2 = ws;
+      console.log("Room Joined");
+      this.gameHandler(ws);
       ws.send(
         JSON.stringify({
-          roomId: game.roomID,
+          roomId: game.roomId,
           status: "Room Joined",
           statusCode: 200,
         })
       );
     } else {
+      console.log("not joined room");
       ws.send(
         JSON.stringify({
           status: "Room Not Found",
@@ -53,16 +56,25 @@ export class GameManager {
   private gameHandler(playerSocket: WebSocket): void {
     // handle game logic
     playerSocket.addEventListener("message", (event) => {
-      console.log("🚀 ~ gameHandler ~ event:", event.data, this.games);
       const game = this.games.find(
         (game) =>
           game.user.webSocketPlayer1 === playerSocket ||
           game.user.webSocketPlayer2 === playerSocket
       );
-      console.log(
-        "🚀 ~ GameManager ~ playerSocket.addEventListener ~ game:",
-        game
-      );
+
+      if (!game) {
+        playerSocket.send(
+          JSON.stringify({
+            status: "Game Not Found",
+            statusCode: 404,
+          })
+        );
+        return;
+      }
+      game.handleGameEvents({
+        message: JSON.parse(event.data.toString()),
+        ws: playerSocket,
+      });
     });
   }
 }
