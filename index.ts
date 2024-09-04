@@ -32,7 +32,7 @@ wss.on("connection", function connection(ws) {
       if (message.type === GAME_EVENTS.CREATE_NEW_GAME) {
         GameInstance.createGameRoom(message.playerId, ws);
       } else if (message.type === GAME_EVENTS.JOIN_GAME) {
-        GameInstance.joinGameRoom(message.playerId, ws, message.roomID);
+        GameInstance.joinGameRoom(message.playerId, ws, message.roomId);
       }
     });
   } catch (error) {
