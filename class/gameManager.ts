@@ -17,7 +17,7 @@ export class GameManager {
   }
 
   public createGameRoom(playerId: string, ws: WebSocket): void {
-    const game = new Game({ player1Id: playerId, ws });
+    const game = new Game({ playerId, ws });
     this.games.push(game);
     this.gameHandler(ws);
 
@@ -32,8 +32,11 @@ export class GameManager {
   public joinGameRoom(playerId: string, ws: WebSocket, roomId: string): void {
     const game = this.games.find((game) => game.roomId === roomId);
     if (game) {
-      game.user.player2Id = playerId;
-      game.user.webSocketPlayer2 = ws;
+      game.user2 = {
+        playerId: playerId,
+        webSocket: ws,
+        pokemon: [],
+      };
       console.log("Room Joined");
       this.gameHandler(ws);
       ws.send(
@@ -58,8 +61,8 @@ export class GameManager {
     playerSocket.addEventListener("message", (event) => {
       const game = this.games.find(
         (game) =>
-          game.user.webSocketPlayer1 === playerSocket ||
-          game.user.webSocketPlayer2 === playerSocket
+          game.user1.webSocket === playerSocket ||
+          game.user2?.webSocket === playerSocket
       );
 
       if (!game) {

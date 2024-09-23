@@ -1,31 +1,20 @@
 import { GAME_EVENTS } from "../types/gameEvents.js";
 import generateRoomId from "../utils/generateRoomId.js";
 import WebSocket from "ws";
-import { GameMessage, pokemon } from "./types.js";
+import { GameMessage, pokemon, user } from "./types.js";
 import { validatePokemon } from "./utils.js";
-
 export class Game {
   public roomId: string;
-  public user: {
-    player1Id: string;
-    webSocketPlayer1: WebSocket;
-    player2Id?: string;
-    webSocketPlayer2?: WebSocket;
-  };
+  public user1: user;
+  public user2?: user;
   private numberOfMoves: number = 0;
-  private pokemon: {
-    player1Pokemon: pokemon[];
-    player2Pokemon: pokemon[];
-  } = {
-    player1Pokemon: [],
-    player2Pokemon: [],
-  };
 
-  constructor({ player1Id, ws }: { player1Id: string; ws: WebSocket }) {
+  constructor({ playerId, ws }: { playerId: string; ws: WebSocket }) {
     this.roomId = generateRoomId();
-    this.user = {
-      player1Id: player1Id,
-      webSocketPlayer1: ws,
+    this.user1 = {
+      playerId: playerId,
+      webSocket: ws,
+      pokemon: [],
     };
   }
   public handleGameEvents({
@@ -38,9 +27,7 @@ export class Game {
     console.log("🚀 ~ Game ~ handleGameEvents ~ message:", message, ws);
     const type = message?.type;
     const playerId =
-      this.user.webSocketPlayer1 === ws
-        ? this.user.player1Id
-        : (this.user.player2Id as string);
+      this.user2?.webSocket === ws ? this.user2.playerId : this.user1.playerId;
 
     switch (type) {
       case GAME_EVENTS.GAME_MOVE:
@@ -62,13 +49,35 @@ export class Game {
   }) {
     console.log("add pokemon", pokemon, ws, playerId);
     const validatedPokemon = validatePokemon(pokemon);
-    if (playerId === this.user.player1Id) {
-      this.pokemon.player1Pokemon.push(validatedPokemon);
-    } else {
-      this.pokemon.player2Pokemon.push(validatedPokemon);
+    if (!validatedPokemon) {
+      ws.send(
+        JSON.stringify({
+          status: "Invalid Pokemon",
+          statusCode: 400,
+        })
+      );
+      return;
     }
+    if (playerId === this.user1.playerId) {
+      this.user1.pokemon.push(validatedPokemon);
+    } else {
+      this.user2?.pokemon.push(validatedPokemon);
+    }
+    ws.send(
+      JSON.stringify({
+        status: "Pokemon Added",
+        statusCode: 200,
+      })
+    );
   }
   private handleGameMove({ move, ws }: { move: string; ws: WebSocket }) {
-    console.log("🚀 ~ Game ~ handleGameMove ~ move", move, ws);
+    console.log("handle game move", move, ws);
+    this.numberOfMoves++;
+    ws.send(
+      JSON.stringify({
+        status: "Move Made",
+        statusCode: 200,
+      })
+    );
   }
 }

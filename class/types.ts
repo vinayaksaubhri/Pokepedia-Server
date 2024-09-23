@@ -1,4 +1,11 @@
+import WebSocket from "ws";
 import { GAME_EVENTS } from "../types/gameEvents";
+
+export type user = {
+  playerId: string;
+  webSocket: WebSocket;
+  pokemon: pokemon[];
+};
 
 export type pokemon = {
   stats: {
