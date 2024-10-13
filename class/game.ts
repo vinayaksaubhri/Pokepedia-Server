@@ -48,6 +48,24 @@ export class Game {
     playerId: string;
   }) {
     console.log("add pokemon", pokemon, ws, playerId);
+    if (playerId === this.user1.playerId && this.user1.pokemon.length > 0) {
+      ws.send(
+        JSON.stringify({
+          status: "Pokemon Already Added",
+          statusCode: 400,
+        })
+      );
+      return;
+    }
+    if (playerId === this.user2?.playerId && this.user2?.pokemon?.length > 0) {
+      ws.send(
+        JSON.stringify({
+          status: "Pokemon Already Added",
+          statusCode: 400,
+        })
+      );
+      return;
+    }
     const validatedPokemon = validatePokemon(pokemon);
     if (!validatedPokemon) {
       ws.send(
